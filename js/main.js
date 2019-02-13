@@ -1,4 +1,11 @@
-let app = new PIXI.Application({
+let Application = PIXI.Application,
+    loader = PIXI.loader,
+    resources = PIXI.loader.resources,
+    Sprite = PIXI.Sprite,
+    TextureCache = PIXI.utils.TextureCache,
+    Rectangle = PIXI.Rectangle;
+
+let app = new Application({
   width: 256,
   height: 256,
   resolution: 1
@@ -10,10 +17,11 @@ app.renderer.resize(600, 600);
 
 //load an image
 
-PIXI.loader
+loader
     .add([
         "../img/icon.png",
-        "../img/cat.png"
+        "../img/cat.png",
+        "../img/tileset.png"
     ])
     .on("progress", loadProgressHandler)
     .load(setup);
@@ -28,6 +36,14 @@ function loadProgressHandler(loader, resource) {
 }
 
 function setup() {
+    let texture = TextureCache["../img/tileset.png"];
+    let rectangle = new Rectangle(192, 128, 64, 64);
+    texture.frame = rectangle;
+    let rocket = new Sprite(texture);
+    app.stage.addChild(rocket);
+
+    //-----------------------------------------------------------------------
+
     let cat = new PIXI.Sprite(PIXI.loader.resources["../img/cat.png"].texture);
     let cat2 = new PIXI.Sprite(PIXI.loader.resources["../img/icon.png"].texture);
 
@@ -45,4 +61,6 @@ function setup() {
     // app.stage.addChild(cat2);
 //   app.stage.addChild(cat2);
 //   cat.visible = false;
+
+    app.renderer.render(app.stage);
 }
