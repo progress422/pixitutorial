@@ -46,14 +46,21 @@ function setup() {
     app.stage.addChild(door);
     //blobs
     let numberOfBlobs = 8,
-        dungeonBorderWidth = 32;
+        dungeonBorderWidth = 32,
+        blobsPositions = {width: [], height: []};
     for (let i = 0; i < numberOfBlobs; i++) {
         let blob = new Sprite(treasureHunter["blob.png"]);
         
-        // blob.x = 32;
         blob.x = Math.floor(Math.random()*(app.renderer.width - dungeonBorderWidth*2 - blob.width)) + dungeonBorderWidth;
-        console.log(blob.x);
-        blob.y = Math.random()*(512-32*2)+32;
+        blob.x = preventImageOnImage(blobsPositions.width, blob.x, blob.width, app.renderer.width, 10);
+        console.log('x',blob.x);
+        
+        blobsPositions.width.push(blob.x);
+        console.log('positions',blobsPositions.width);
+        
+        blob.y = Math.floor(Math.random()*(app.renderer.height - dungeonBorderWidth*2 - blob.height)) + dungeonBorderWidth;
+        blob.y = preventImageOnImage(blobsPositions.height, blob.y, blob.height, app.renderer.height, 10);
+        blobsPositions.height.push(blob.y);
         app.stage.addChild(blob);
     }
 
@@ -71,6 +78,38 @@ function setup() {
     // cat.visible = false;
 
     app.renderer.render(app.stage);
+}
+
+function preventImageOnImage(placedObjects, objectPosition, objSize, canvasSize, padding, directionPositive = false) {
+    console.log('----------------------------');
+    
+    let possiblePosition;
+    let varDirectionPositive = directionPositive;
+    placedObjects.forEach(arrElPos => {
+        console.log(arrElPos);
+        console.log(placedObjects);
+        
+        
+        if (Math.abs(arrElPos - objectPosition) <= objSize){ //objects are too close
+            console.log('too close');
+            
+            if (varDirectionPositive || objectPosition < canvasSize/2){ //set new position direction so object won't be out of the canvas
+                possiblePosition = arrElPos + objSize + padding;
+                varDirectionPositive = true;
+            } else {
+                possiblePosition = arrElPos - objSize - padding;
+                varDirectionPositive = false;
+            }
+            console.log('possible position', possiblePosition);
+            
+            // preventImageOnImage(placedObjects, objectPosition, objSize, canvasSize, padding, varDirectionPositive);
+        } else {
+            console.log('return and go on =>');
+            
+            return objectPosition;
+        }
+    });
+    return objectPosition;
 }
 
 function loadProgressHandler(loader, resource) {
