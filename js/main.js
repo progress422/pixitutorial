@@ -25,17 +25,65 @@ loader
     .load(setup);
 //PIXI.loader.reset(); //reset loader
 
+let explorer;
+
 function setup() {
     let treasureHunter = PIXI.loader.resources["../img/treasureHunter.json"].textures;
     let dungeon = new Sprite(treasureHunter["dungeon.png"]),
         treasure = new Sprite(treasureHunter["treasure.png"]),
-        door = new Sprite(treasureHunter["door.png"]),
-        explorer = new Sprite(treasureHunter["explorer.png"]);
+        door = new Sprite(treasureHunter["door.png"]);
+    
+    explorer = new Sprite(treasureHunter["explorer.png"]);
+
+    let left = keyboard('ArrowLeft'),
+    right = keyboard('ArrowRight'),
+    up = keyboard('ArrowUp'),
+    down = keyboard('ArrowDown');
+
+    left.press = () => {
+        explorer.vx = -5;
+        explorer.vy = 0;
+    };
+    left.release = () => {
+        if (!right.isDown && explorer.vy === 0) {
+            explorer.vx = 0;
+        }
+    };
+    up.press = () => {
+        explorer.vy = -5;
+        explorer.vx = 0;
+    };
+    up.release = () => {
+        if (!down.isDown && explorer.vx === 0) {
+            explorer.vy = 0;
+        }
+    };
+    right.press = () => {
+        explorer.vx = 5;
+        explorer.vy = 0;
+    };
+    right.release = () => {
+        if (!left.isDown && explorer.vy === 0) {
+            explorer.vx = 0;
+        }
+    };
+    down.press = () => {
+        explorer.vy = 5;
+        explorer.vx = 0;
+    };
+    down.release = () => {
+        if (!up.isDown && explorer.vx === 0) {
+            explorer.vy = 0;
+        }
+    };
+        
     //dungeon
     app.stage.addChild(dungeon);
     //explorer
     explorer.x = 68;
     explorer.y = app.stage.height / 2 - explorer.height / 2;
+    explorer.vx = 0;
+    explorer.vy = 0;
     app.stage.addChild(explorer);
     //treasure
     treasure.x = app.stage.width - treasure.width - 48;
@@ -77,7 +125,13 @@ function setup() {
     // app.stage.addChild(cat);
     // cat.visible = false;
 
-    app.renderer.render(app.stage);
+    // app.renderer.render(app.stage);
+    app.ticker.add(delta => gameLoop(delta));
+}
+
+function gameLoop(delta) {
+    explorer.x += explorer.vx;
+    explorer.y += explorer.vy;
 }
 
 function preventImageOnImage(placedObjects, objectPosition, objSize, canvasSize, padding, directionPositive = false) {
@@ -118,4 +172,51 @@ function loadProgressHandler(loader, resource) {
 
     //Display the percentage of files currently loaded
     console.log("progress: " + loader.progress + "%"); 
+}
+
+function keyboard(value) {
+    let key = {};
+    key.value = value;
+    key.isDown = false;
+    key.isUp = true;
+    key.press = undefined;
+    key.release = undefined;
+    //The `downHandler`
+    key.downHandler = event => {
+      if (event.key === key.value) {
+        if (key.isUp && key.press) key.press();
+        key.isDown = true;
+        key.isUp = false;
+        event.preventDefault();
+      }
+    };
+  
+    //The `upHandler`
+    key.upHandler = event => {
+      if (event.key === key.value) {
+        if (key.isDown && key.release) key.release();
+        key.isDown = false;
+        key.isUp = true;
+        event.preventDefault();
+      }
+    };
+  
+    //Attach event listeners
+    const downListener = key.downHandler.bind(key);
+    const upListener = key.upHandler.bind(key);
+    
+    window.addEventListener(
+      "keydown", downListener, false
+    );
+    window.addEventListener(
+      "keyup", upListener, false
+    );
+    
+    // Detach event listeners
+    key.unsubscribe = () => {
+      window.removeEventListener("keydown", downListener);
+      window.removeEventListener("keyup", upListener);
+    };
+    
+    return key;
 }
