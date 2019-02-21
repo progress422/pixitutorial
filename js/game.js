@@ -6,23 +6,29 @@ const Application = PIXI.Application,
     TextureCache = PIXI.utils.TextureCache,
     Rectangle = PIXI.Rectangle;
 
-const app = new Application({
+// const app = new Application({
+//     width: 1920,
+//     height: 1080,
+//     resolution: 0.7
+// });
+
+var renderer = PIXI.autoDetectRenderer({
     width: 1920,
     height: 1080,
-    resolution: 0.7
+    resolution: 1
 });
+document.body.appendChild(renderer.view);
 
-document.body.appendChild(app.view);
+// document.body.appendChild(app.view);
 
 loader
-    .add([
-
-    ])
+    .add('/img/aaa/aaa.tmx')
     .on('progress', loaderProgress)
     .load(setup);
 
-function setup() {
-
+function setup(loader, resources) {
+    let tileMap = new PIXI.extras.TiledMap('/img/aaa/aaa.tmx');
+    renderer.render(tileMap);
 }
 
 function loaderProgress(loader, resource) {

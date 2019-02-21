@@ -1,0 +1,44 @@
+{
+  "name": "pixi-tiledmap",
+  "version": "1.9.3",
+  "description": "Pixi.js Tiled map editor plugin",
+  "keywords": [
+    "pixi",
+    "pixi.js",
+    "tiled",
+    "tilemap",
+    "tiledmap",
+    "tmx"
+  ],
+  "author": "Hagen Sommerkorn",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riebel/pixi-tiledmap.git"
+  },
+  "license": "MIT",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "eslint src/index.js && webpack",
+    "example": "eslint src/index.js && webpack && hs ./example/browser/ -c-1"
+  },
+  "bugs": {
+    "url": "https://github.com/riebel/pixi-tiledmap/issues"
+  },
+  "homepage": "https://github.com/riebel/pixi-tiledmap#readme",
+  "bin": {
+    "pixi-tiledmap": "dist/pixi-tiledmap.min.js"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.1",
+    "eslint": "^4.15.0",
+    "http-server": "^0.11.1",
+    "pixi.js": "^4.6.2",
+    "webpack": "^3.10.0"
+  },
+  "dependencies": {
+    "tmx-parser": "^1.5.0"
+  },
+  "registry": "npm"
+}
