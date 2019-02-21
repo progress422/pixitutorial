@@ -14,7 +14,7 @@ const Application = PIXI.Application,
 
 var renderer = PIXI.autoDetectRenderer({
     width: 1920,
-    height: 1080,
+    height: 1024,
     resolution: 1
 });
 document.body.appendChild(renderer.view);
@@ -22,12 +22,12 @@ document.body.appendChild(renderer.view);
 // document.body.appendChild(app.view);
 
 loader
-    .add('/img/aaa/aaa.tmx')
+    .add('/img/teamfun/tilemap.tmx')
     .on('progress', loaderProgress)
     .load(setup);
 
 function setup(loader, resources) {
-    let tileMap = new PIXI.extras.TiledMap('/img/aaa/aaa.tmx');
+    let tileMap = new PIXI.extras.TiledMap('/img/teamfun/tilemap.tmx');
     renderer.render(tileMap);
 }
 
