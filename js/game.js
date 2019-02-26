@@ -29,6 +29,8 @@ loader
 function setup(loader, resources) {
     let tileMap = new PIXI.extras.TiledMap('/img/teamfun/tilemap.tmx');
     renderer.render(tileMap);
+    console.log(tileMap);
+    
 }
 
 function loaderProgress(loader, resource) {
