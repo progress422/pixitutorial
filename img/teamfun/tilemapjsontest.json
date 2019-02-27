@@ -46,7 +46,46 @@
                  "id":1,
                  "image":"land\/DirtLeft.png",
                  "imageheight":128,
-                 "imagewidth":128
+                 "imagewidth":128,
+                 "objectgroup":
+                    {
+                     "draworder":"index",
+                     "name":"",
+                     "objects":[
+                            {
+                             "height":0,
+                             "id":1,
+                             "name":"",
+                             "polygon":[
+                                    {
+                                     "x":0,
+                                     "y":0
+                                    }, 
+                                    {
+                                     "x":0,
+                                     "y":-78.7272727272727
+                                    }, 
+                                    {
+                                     "x":128.25,
+                                     "y":-77.5
+                                    }, 
+                                    {
+                                     "x":128,
+                                     "y":0
+                                    }],
+                             "rotation":0,
+                             "type":"",
+                             "visible":true,
+                             "width":0,
+                             "x":0,
+                             "y":128
+                            }],
+                     "opacity":1,
+                     "type":"objectgroup",
+                     "visible":true,
+                     "x":0,
+                     "y":0
+                    }
                 }, 
                 {
                  "id":2,
