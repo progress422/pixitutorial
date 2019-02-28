@@ -9,7 +9,7 @@ const Application = PIXI.Application,
 const app = new Application({
     width: 1920,
     height: 1024,
-    resolution: 0.5
+    resolution: 1
 });
 
 // laod background
@@ -17,22 +17,34 @@ loader.add('background', '/img/teamfun/Background2.png')
     .add('player', '/img/teamfun/player.png');
 
 const tilemap = {};
-const gravity = 0.93;
 let player;
 parseTileMap('/img/teamfun/tilemapjsontestcsv.json');
 
 
-
+ 
 document.body.appendChild(app.view);
 
 function setup() {
-    setBackground();
+    // setBackground();
     tilemap.draw();
     setPlayer();
     app.ticker.add(delta => update(delta));
 }
+console.log('height----------',app.renderer.height);
 
 function update(delta) {
+    if (player.y+player.height + player.vy > app.renderer.height){
+        player.vy = 0;
+        player.y = app.renderer.height - player.height;
+        player.jump = false;
+        player.gravity = 0;
+        player.jumpHeight = 15;
+    }
+    // jump
+    if (player.jump){
+        player.gravity += 0.5;
+        player.vy = -player.jumpHeight + player.gravity;
+    }
     player.x += player.vx;
     player.y += player.vy;
 }
@@ -41,8 +53,10 @@ function setPlayer() {
     player = new PIXI.Sprite(
         PIXI.loader.resources['player'].texture
     );
+    player.position.set(150,800);
     player.vx = 0;
-    player.vy = 0;
+    player.vy = 5;
+    player.gravity = 0;
 
     app.stage.addChild(player);
     playerMove();
@@ -51,8 +65,7 @@ function setPlayer() {
 function playerMove(){
     let left = keyboard('ArrowLeft'),
         right = keyboard('ArrowRight'),
-        up = keyboard('ArrowUp'),
-        down = keyboard('ArrowDown');
+        up = keyboard('ArrowUp');
         speed = 5;
     left.press = () => {
         if (!right.isDown){
@@ -65,11 +78,8 @@ function playerMove(){
         }
     };
     up.press = () => {
-        player.vy = -speed;
-    };
-    up.release = () => {
-        if (!down.isDown) {
-            player.vy = 0;
+        if (!player.jump){
+            player.jump = true;
         }
     };
     right.press = () => {
@@ -82,14 +92,6 @@ function playerMove(){
     right.release = () => {
         if (!left.isDown) {
             player.vx = 0;
-        }
-    };
-    down.press = () => {
-        player.vy = speed;
-    };
-    down.release = () => {
-        if (!up.isDown) {
-            player.vy = 0;
         }
     };
 }
