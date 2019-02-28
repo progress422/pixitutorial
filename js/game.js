@@ -8,50 +8,111 @@ const Application = PIXI.Application,
 
 const app = new Application({
     width: 1920,
-    height: 1080,
-    resolution: 1
+    height: 1024,
+    resolution: 0.5
 });
 
-// var renderer = PIXI.autoDetectRenderer({
-//     width: 1920,
-//     height: 1024,
-//     resolution: 1
-// });
-// document.body.appendChild(renderer.view);
+// laod background
+loader.add('background', '/img/teamfun/Background2.png')
+    .add('player', '/img/teamfun/player.png');
+
+const tilemap = {};
+const gravity = 0.93;
+let player;
 parseTileMap('/img/teamfun/tilemapjsontestcsv.json');
-// console.log(tilemap);
-// console.log(tilemap.cols);
-// console.log(tilemap.imagesArray);
 
 
 
 document.body.appendChild(app.view);
 
-function setup(loader, resources) {
-    let sprite = new PIXI.Sprite(
-       PIXI.loader.resources['tileimg1'].texture
-    );
-    app.stage.addChild(sprite);
+function setup() {
+    setBackground();
+    tilemap.draw();
+    setPlayer();
+    app.ticker.add(delta => update(delta));
 }
 
-function loaderProgress(loader, resource) {
-    //Display the file `url` currently being loaded
-    console.log("loading: " + resource.url); 
+function update(delta) {
+    player.x += player.vx;
+    player.y += player.vy;
+}
 
-    //Display the percentage of files currently loaded
-    console.log("progress: " + loader.progress + "%"); 
+function setPlayer() {
+    player = new PIXI.Sprite(
+        PIXI.loader.resources['player'].texture
+    );
+    player.vx = 0;
+    player.vy = 0;
+
+    app.stage.addChild(player);
+    playerMove();
+}
+
+function playerMove(){
+    let left = keyboard('ArrowLeft'),
+        right = keyboard('ArrowRight'),
+        up = keyboard('ArrowUp'),
+        down = keyboard('ArrowDown');
+        speed = 5;
+    left.press = () => {
+        if (!right.isDown){
+            player.vx = -speed;
+        }
+    };
+    left.release = () => {
+        if (!right.isDown) {
+            player.vx = 0;
+        }
+    };
+    up.press = () => {
+        player.vy = -speed;
+    };
+    up.release = () => {
+        if (!down.isDown) {
+            player.vy = 0;
+        }
+    };
+    right.press = () => {
+        if (!left.isDown){
+            player.vx = speed;
+        } else {
+            player.vx = 0; 
+        }
+    };
+    right.release = () => {
+        if (!left.isDown) {
+            player.vx = 0;
+        }
+    };
+    down.press = () => {
+        player.vy = speed;
+    };
+    down.release = () => {
+        if (!up.isDown) {
+            player.vy = 0;
+        }
+    };
+}
+
+function setBackground() {
+    let bg = new PIXI.Sprite(
+        PIXI.loader.resources['background'].texture
+    );
+    app.stage.addChild(bg);
 }
 
 function parseTileMap(tilemapSource){
-    const tilemap = {}
     fetch(tilemapSource)
     .then(res => res.json())
     .then(data => {
-        console.log(data);
+        console.log('all json data',data);
+        console.log('------------------------------------');
+        
         tilemap.rows = data.height;
         tilemap.cols = data.width;
         tilemap.tileWidth = data.tilewidth;
         tilemap.tileHeight = data.tileheight;
+        tilemap.tilemapPrefix = 'tileimg';
         tilemap.layers = data.layers.map((layer) => {
             return {
                 data: layer.data
@@ -63,13 +124,13 @@ function parseTileMap(tilemapSource){
                 tiles: tileset.tiles
             }
         });
-        console.table(tilemap);
-        let imagesArr = tilemap.loadTiles();
-        tilemap.draw();
+        console.log('Tilemap',tilemap);
+        console.log('------------------------------------');
+        tilemap.loadTiles();
     });
     tilemap.loadTiles = function() {
         let tileImagesArr = [];
-        let tilemapPrefix = 'tileimg';
+        let tilemapPrefix = tilemap.tilemapPrefix;
         const pathToImages = '/img/teamfun/';
         this.tilesets.map((tileset) => {
             let tileStartId = tileset.firstgid;
@@ -80,27 +141,98 @@ function parseTileMap(tilemapSource){
                 }
             })]
         });
-        console.log(tileImagesArr);
-        
         // load images to pixi
         tileImagesArr.map((img) => loader.add(img.alias, pathToImages + img.src));
-        loader
-            // .on('progress', loaderProgress)
-            .load(setTilesOnMap(tileImagesArr.map((img) => img.alias)));
+        loader.load(setup);
     }
     tilemap.draw = function() {
-        this.layers.map((layer) => {
-            console.log('layer',layer);
-        })
+        // console.log('layers',tilemap.layers);
+        // console.log('rows',tilemap.rows);
+        // console.log('cols',tilemap.cols);
+        // console.log('tile width',tilemap.tileWidth);
+        // console.log('tile height',tilemap.tileHeight);
+        let tileWidth = tilemap.tileWidth;
+        let tileHeight = tilemap.tileHeight;
+        let cols = tilemap.cols;
+        tilemap.layers.map((layer) => {
+            let rowNumber = 1;
+            layer.data.map((tile, index) => {
+                if (tile != 0) {
+                    let tileX = (index - cols*(rowNumber-1)) * tileWidth;
+                    let tileY = rowNumber * tileHeight;
+                    
+                    tilemap.setTileOnMap(tileX,tileY,`${tilemap.tilemapPrefix}${tile}`);
+                    // console.log({
+                    //     index: index + 1,
+                    //     tilenumber: tile,
+                    //     rownNumber: rowNumber
+                    // });
+                }
+                if ((index + 1)%cols == 0)
+                    rowNumber += 1;
+            });
+        });
+    }
+    tilemap.setTileOnMap = function(x,y,alias) {
+        let tile = new PIXI.Sprite(
+            PIXI.loader.resources[alias].texture
+        );
+        tile.position.set(x,y-tile.height);
+        app.stage.addChild(tile);
     }
 }
 
-function setTilesOnMap(tilesAliasArr){
-    console.log(tilesAliasArr);
-    tilesAliasArr.map((imgAlias) => {
-        let img = new PIXI.Sprite(
-            PIXI.loader.resources[imgAlias].texture
-        );
-    })
-    // app.stage.addChild(sprite);
+function Player(x, y) {
+    this.x = x;
 }
+
+// Keyboard -------------------------------------------------
+
+function keyboard(value) {
+    let key = {};
+    key.value = value;
+    key.isDown = false;
+    key.isUp = true;
+    key.press = undefined;
+    key.release = undefined;
+    //The `downHandler`
+    key.downHandler = event => {
+      if (event.key === key.value) {
+        if (key.isUp && key.press) key.press();
+        key.isDown = true;
+        key.isUp = false;
+        event.preventDefault();
+      }
+    };
+  
+    //The `upHandler`
+    key.upHandler = event => {
+      if (event.key === key.value) {
+        if (key.isDown && key.release) key.release();
+        key.isDown = false;
+        key.isUp = true;
+        event.preventDefault();
+      }
+    };
+  
+    //Attach event listeners
+    const downListener = key.downHandler.bind(key);
+    const upListener = key.upHandler.bind(key);
+    
+    window.addEventListener(
+      "keydown", downListener, false
+    );
+    window.addEventListener(
+      "keyup", upListener, false
+    );
+    
+    // Detach event listeners
+    key.unsubscribe = () => {
+      window.removeEventListener("keydown", downListener);
+      window.removeEventListener("keyup", upListener);
+    };
+    
+    return key;
+}
+
+// Keyboard END -------------------------------------------------
