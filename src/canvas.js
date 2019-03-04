@@ -1,3 +1,30 @@
+// import utils from './utils'
+// import { log } from 'util';
+import Collisions from 'collisions';
+
+// Create the collision system
+const collision = new Collisions();
+
+// Create a Result object for collecting information about the collisions
+const collResult = collision.createResult();
+
+// Create the player (represented by a Circle)
+const collPlayer = collision.createCircle(100, 100, 10);
+
+// Create some walls (represented by Polygons)
+// const wall1 = collision.createPolygon(400, 500, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 1.7);
+// const wall2 = collision.createPolygon(200, 100, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 2.2);
+// const wall3 = collision.createPolygon(400, 50, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 0.7);
+const wall4 = collision.createCircle(150,946,30);
+
+// Update the collision system
+collision.update();
+
+// -----------------------------------------------------------
+// -----------------------------------------------------------
+// -----------------------------------------------------------
+// -----------------------------------------------------------
+
 //Aliases
 const Application = PIXI.Application,
     loader = PIXI.loader,
@@ -12,12 +39,28 @@ const app = new Application({
     resolution: 1
 });
 
+
 // laod background
 loader.add('background', '/img/teamfun/Background2.png')
-    .add('player', '/img/teamfun/player.png');
+.add('player', '/img/teamfun/player.png');
 
 const tilemap = {};
 let player;
+let playerMoves = {
+    speed: 5,
+    left() {
+        // player.vx = -this.speed;
+        player.movingDirection = 'left';
+    },
+    right() {
+        // player.vx = this.speed;
+        player.movingDirection = 'right';
+    },
+    stop() {
+        // player.vx = 0;
+        player.movingDirection = '';
+    }
+}
 parseTileMap('/img/teamfun/tilemapjsontestcsv.json');
 
 
@@ -25,28 +68,113 @@ parseTileMap('/img/teamfun/tilemapjsontestcsv.json');
 document.body.appendChild(app.view);
 
 function setup() {
-    // setBackground();
+    setBackground();
     tilemap.draw();
     setPlayer();
+    // create a new Graphics object
+    var graphics = new PIXI.Graphics();
+    // set a fill color and an opacity
+    graphics.beginFill(0xfff012,1);
+    // draw a rectangle using the arguments as:  x, y, radius
+    graphics.drawCircle(150,946,30);
+    // add it to your scene
+    app.stage.addChild(graphics);
     app.ticker.add(delta => update(delta));
 }
 console.log('height----------',app.renderer.height);
-
 function update(delta) {
+    player.prevX = player.x;
+    player.prevY = player.y;
     if (player.y+player.height + player.vy > app.renderer.height){
         player.vy = 0;
         player.y = app.renderer.height - player.height;
         player.jump = false;
-        player.gravity = 0;
+        player.yMomentum = 0;
         player.jumpHeight = 15;
     }
     // jump
     if (player.jump){
-        player.gravity += 0.5;
-        player.vy = -player.jumpHeight + player.gravity;
+        player.yMomentum += player.gravity;
+        player.vy = -player.jumpHeight + player.yMomentum;
     }
+    //move
+    if (player.movingDirection == 'right'){
+        if (yChanged()){
+            player.speedPerFrame = player.speedPerFrameInTheAir;
+        } else {
+            player.speedPerFrame = player.speedPerFrameOnTheGround;
+        }
+        if (player.vx <= player.maxSpeed)
+            player.vx += player.speedPerFrame;
+    } else if (player.movingDirection == 'left') {
+        if (yChanged()){
+            player.speedPerFrame = player.speedPerFrameInTheAir;
+        } else {
+            player.speedPerFrame = player.speedPerFrameOnTheGround;
+        }
+        if (player.vx >= -player.maxSpeed)
+            player.vx -= player.speedPerFrame;
+    } else {
+        if (yChanged()){
+            player.speedPerFrame = player.speedPerFrameFalling;
+        } else {
+            player.speedPerFrame = player.speedPerFrameOnTheGround;
+        }
+        if (player.vx + player.speedPerFrame < 0){
+            player.vx += player.speedPerFrame;
+        } else if (player.vx - player.speedPerFrame > 0){
+            player.vx -= player.speedPerFrame;
+        } else {
+            player.vx = 0;
+        }
+    }
+    
     player.x += player.vx;
     player.y += player.vy;
+
+    collPlayer.x = player.x;
+    collPlayer.y = player.y;
+
+    console.log(player.x, player.y);
+    
+
+    // Update the collision system
+    collision.update();
+    //check for colission
+    checkCollision();
+}
+
+
+function checkCollision() {
+    // Get any potential collisions (this quickly rules out walls that have no chance of colliding with the collPlayer)
+    const collPotentials = collPlayer.potentials();
+
+    // Loop through the potential wall collisions
+    for(const wall of collPotentials) {
+        // Test if the collPlayer collides with the wall
+        if(collPlayer.collides(wall, collResult)) {
+            console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+            
+            // Push the collPlayer out of the wall
+            // collPlayer.x -= collResult.overlap * collResult.overlap_x;
+            // collPlayer.y -= collResult.overlap * collResult.overlap_y;
+        }
+    }
+}
+
+function xChanged() {
+    if (player.x !== player.prevX){
+        return false;
+    } else {
+        return true
+    }
+}
+function yChanged() {
+    if (player.y !== player.prevY){
+        return false;
+    } else {
+        return true
+    }
 }
 
 function setPlayer() {
@@ -54,27 +182,33 @@ function setPlayer() {
         PIXI.loader.resources['player'].texture
     );
     player.position.set(150,800);
+    player.maxSpeed = 10;
     player.vx = 0;
     player.vy = 5;
-    player.gravity = 0;
+    player.gravity = 0.5;
+    player.yMomentum = 0;
+    player.speedPerFrameOnTheGround = player.maxSpeed/7;
+    player.speedPerFrameInTheAir = player.maxSpeed/15;
+    player.speedPerFrameFalling = player.maxSpeed/35;
+    player.speedPerFrame = player.speedPerFrameOnTheGround;
 
     app.stage.addChild(player);
-    playerMove();
+    playerMoveInit();
 }
 
-function playerMove(){
+function playerMoveInit(){
     let left = keyboard('ArrowLeft'),
         right = keyboard('ArrowRight'),
         up = keyboard('ArrowUp');
-        speed = 5;
+
     left.press = () => {
-        if (!right.isDown){
-            player.vx = -speed;
-        }
+        playerMoves.left();
     };
     left.release = () => {
         if (!right.isDown) {
-            player.vx = 0;
+            playerMoves.stop();
+        } else {
+            playerMoves.right();
         }
     };
     up.press = () => {
@@ -83,17 +217,23 @@ function playerMove(){
         }
     };
     right.press = () => {
-        if (!left.isDown){
-            player.vx = speed;
-        } else {
-            player.vx = 0; 
-        }
+        playerMoves.right();
     };
     right.release = () => {
         if (!left.isDown) {
-            player.vx = 0;
+            playerMoves.stop();
+        } else {
+            playerMoves.left();
         }
     };
+}
+
+function changeVelocity(intensity, changeTo, velocityVector = 'vx'){
+    if (player[velocityVector] < changeTo){
+        player[velocityVector] += intensity;
+    } else {
+        player[velocityVector] -= intensity;
+    }
 }
 
 function setBackground() {
@@ -148,11 +288,6 @@ function parseTileMap(tilemapSource){
         loader.load(setup);
     }
     tilemap.draw = function() {
-        // console.log('layers',tilemap.layers);
-        // console.log('rows',tilemap.rows);
-        // console.log('cols',tilemap.cols);
-        // console.log('tile width',tilemap.tileWidth);
-        // console.log('tile height',tilemap.tileHeight);
         let tileWidth = tilemap.tileWidth;
         let tileHeight = tilemap.tileHeight;
         let cols = tilemap.cols;
@@ -164,11 +299,6 @@ function parseTileMap(tilemapSource){
                     let tileY = rowNumber * tileHeight;
                     
                     tilemap.setTileOnMap(tileX,tileY,`${tilemap.tilemapPrefix}${tile}`);
-                    // console.log({
-                    //     index: index + 1,
-                    //     tilenumber: tile,
-                    //     rownNumber: rowNumber
-                    // });
                 }
                 if ((index + 1)%cols == 0)
                     rowNumber += 1;
