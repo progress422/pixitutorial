@@ -9,13 +9,13 @@ const collision = new Collisions();
 const collResult = collision.createResult();
 
 // Create the player (represented by a Circle)
-const collPlayer = collision.createCircle(100, 100, 10);
+const collPlayer = collision.createPolygon(0, 0, [[0,0], [78,0], [78,78], [0,78]]);
 
 // Create some walls (represented by Polygons)
 // const wall1 = collision.createPolygon(400, 500, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 1.7);
 // const wall2 = collision.createPolygon(200, 100, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 2.2);
 // const wall3 = collision.createPolygon(400, 50, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 0.7);
-const wall4 = collision.createCircle(150,946,30);
+const wall4 = collision.createCircle(150,1000,30);
 
 // Update the collision system
 collision.update();
@@ -48,6 +48,10 @@ const tilemap = {};
 let player;
 let playerMoves = {
     speed: 5,
+    blockLeft: false,
+    blockRight: false,
+    blockBottom: false,
+    blockTop: false,
     left() {
         // player.vx = -this.speed;
         player.movingDirection = 'left';
@@ -76,13 +80,16 @@ function setup() {
     // set a fill color and an opacity
     graphics.beginFill(0xfff012,1);
     // draw a rectangle using the arguments as:  x, y, radius
-    graphics.drawCircle(150,946,30);
+    graphics.drawCircle(150,1000,30);
+    graphics.drawPolygon([0, 0, 128,0, 128, 128, 0, 128]);
+    graphics.endFill();
     // add it to your scene
     app.stage.addChild(graphics);
     app.ticker.add(delta => update(delta));
 }
 console.log('height----------',app.renderer.height);
 function update(delta) {
+    // Update the collision system
     player.prevX = player.x;
     player.prevY = player.y;
     if (player.y+player.height + player.vy > app.renderer.height){
@@ -90,7 +97,6 @@ function update(delta) {
         player.y = app.renderer.height - player.height;
         player.jump = false;
         player.yMomentum = 0;
-        player.jumpHeight = 15;
     }
     // jump
     if (player.jump){
@@ -128,38 +134,53 @@ function update(delta) {
             player.vx = 0;
         }
     }
-    
-    player.x += player.vx;
-    player.y += player.vy;
-
-    collPlayer.x = player.x;
-    collPlayer.y = player.y;
-
-    console.log(player.x, player.y);
-    
-
-    // Update the collision system
-    collision.update();
-    //check for colission
     checkCollision();
 }
 
 
 function checkCollision() {
     // Get any potential collisions (this quickly rules out walls that have no chance of colliding with the collPlayer)
+
+    collPlayer.x = player.x + player.vx;
+    collPlayer.y = player.y + player.vy;
+    console.log(collPlayer.x);
+    
+    collision.update();
     const collPotentials = collPlayer.potentials();
+    let collided = false;
 
     // Loop through the potential wall collisions
     for(const wall of collPotentials) {
         // Test if the collPlayer collides with the wall
         if(collPlayer.collides(wall, collResult)) {
-            console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+            console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',  collResult, collResult.overlap_x);
+            collided = true;
+            
+            if (collResult.overlap_x == -1){
+                console.log( collResult.overlap);
+                // player.x = Math.round(player.x + collResult.overlap - 1);
+                return 'left';
+            }
+            if (collResult.overlap_x == 1){
+                console.log( collResult.overlap);
+                
+                // player.x = Math.round(player.x - collResult.overlap + 1);
+                return 'right';
+            }
             
             // Push the collPlayer out of the wall
-            // collPlayer.x -= collResult.overlap * collResult.overlap_x;
-            // collPlayer.y -= collResult.overlap * collResult.overlap_y;
+            player.vx = 0;
+            player.vx = 0;
         }
     }
+    if (!collided){
+        console.log('moving');
+        
+        player.x += player.vx;
+        player.y += player.vy;
+    }
+    
+    
 }
 
 function xChanged() {
@@ -181,12 +202,13 @@ function setPlayer() {
     player = new PIXI.Sprite(
         PIXI.loader.resources['player'].texture
     );
-    player.position.set(150,800);
+    player.position.set(350,800);
     player.maxSpeed = 10;
     player.vx = 0;
     player.vy = 5;
     player.gravity = 0.5;
     player.yMomentum = 0;
+    player.jumpHeight = 15;
     player.speedPerFrameOnTheGround = player.maxSpeed/7;
     player.speedPerFrameInTheAir = player.maxSpeed/15;
     player.speedPerFrameFalling = player.maxSpeed/35;
