@@ -33,8 +33,8 @@ var graphics2 = new PIXI.Graphics();
 const collPlayer = collision.createPolygon(0, 0, [[0,0], [78,0], [78,78], [0,78]]);
 
 // Create some walls (represented by Polygons)
-// const wall1 = collision.createPolygon(400, 500, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 1.7);
-const wall4 = collision.createPolygon(0,0,[[350,700], [500,700], [425, 600]]);
+// const wall1 = collision.createPolygon(700, 500, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 1.7);
+const wall4 = collision.createPolygon(0,0,[[350,850], [425,700], [700,850], [425, 900]]);
 const line = collision.createPolygon(0, app.renderer.height, [[0, 0], [app.renderer.width, 0]]);
 // Update the collision system
 collision.update();
@@ -86,7 +86,7 @@ function setup() {
     // set a fill color and an opacity
     graphics.beginFill(0xfff012,1);
     // draw a rectangle using the arguments as:  x, y, radius
-    graphics.drawPolygon([350,700, 500,700, 425,600]);
+    graphics.drawPolygon([350,850, 425,700, 700,850, 425,900]);
     graphics.drawPolygon([0, 0, 128,0, 128, 128, 0, 128]);
     graphics.endFill();
     // add it to your scene
@@ -103,39 +103,39 @@ function update(delta) {
         player.yMomentum += player.gravity;
         player.vy = -player.jumpHeight + player.yMomentum;
     } else {
-        // player.vy = 5;
+        player.vy = 5;
     }
     //move
-    // if (player.movingDirection == 'right'){
-    //     if (yChanged()){
-    //         player.speedPerFrame = player.speedPerFrameInTheAir;
-    //     } else {
-    //         player.speedPerFrame = player.speedPerFrameOnTheGround;
-    //     }
-    //     if (player.vx <= player.maxSpeed)
-    //         player.vx += player.speedPerFrame;
-    // } else if (player.movingDirection == 'left') {
-    //     if (yChanged()){
-    //         player.speedPerFrame = player.speedPerFrameInTheAir;
-    //     } else {
-    //         player.speedPerFrame = player.speedPerFrameOnTheGround;
-    //     }
-    //     if (player.vx >= -player.maxSpeed)
-    //         player.vx -= player.speedPerFrame;
-    // } else {
-    //     if (yChanged()){
-    //         player.speedPerFrame = player.speedPerFrameFalling;
-    //     } else {
-    //         player.speedPerFrame = player.speedPerFrameOnTheGround;
-    //     }
-    //     if (player.vx + player.speedPerFrame < 0){
-    //         player.vx += player.speedPerFrame;
-    //     } else if (player.vx - player.speedPerFrame > 0){
-    //         player.vx -= player.speedPerFrame;
-    //     } else {
-    //         player.vx = 0;
-    //     }
-    // }
+    if (player.movingDirection == 'right'){
+        if (yChanged()){
+            player.speedPerFrame = player.speedPerFrameInTheAir;
+        } else {
+            player.speedPerFrame = player.speedPerFrameOnTheGround;
+        }
+        if (player.vx <= player.maxSpeed)
+            player.vx += player.speedPerFrame;
+    } else if (player.movingDirection == 'left') {
+        if (yChanged()){
+            player.speedPerFrame = player.speedPerFrameInTheAir;
+        } else {
+            player.speedPerFrame = player.speedPerFrameOnTheGround;
+        }
+        if (player.vx >= -player.maxSpeed)
+            player.vx -= player.speedPerFrame;
+    } else {
+        if (yChanged()){
+            player.speedPerFrame = player.speedPerFrameFalling;
+        } else {
+            player.speedPerFrame = player.speedPerFrameOnTheGround;
+        }
+        if (player.vx + player.speedPerFrame < 0){
+            player.vx += player.speedPerFrame;
+        } else if (player.vx - player.speedPerFrame > 0){
+            player.vx -= player.speedPerFrame;
+        } else {
+            player.vx = 0;
+        }
+    }
     checkCollision();
 }
 
@@ -160,43 +160,35 @@ function checkCollision() {
             // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',  collResult, collResult.overlap_x);
 
             // Push the collPlayer out of the wall
-            console.log('!!!!!!!!!!!!!!overlap',collResult.overlap);
-
-            if (collResult.overlap_x == -1){
+            console.log('y ', collResult.overlap_y);
+            console.log('!!!!!!!!!!!!!!collResult',collResult);
+            if (Math.abs(collResult.overlap_x) != 0){
                 xCollided = true;
-                // player.x = Math.round(player.x + collResult.overlap - 1);
-                player.vx = 0;
-                return 'left';
             }
-            if (collResult.overlap_x == 1){
-                xCollided = true;
-                player.vx = 0;
-                // player.x = Math.round(player.x - collResult.overlap + 1);
-                return 'right';
-            }
-            if (collResult.overlap_y == 1){
+            if (1 - collResult.overlap_y < 1){
                 yCollided = true;
                 console.log('y 1');
                 player.yMomentum = 0;
                 player.vy = 0;
                 player.jump = false;
             }
-            if (collResult.overlap_y == -1){
+            if (1 - collResult.overlap_y > 1){
                 yCollided = true;
                 console.log('y -1');
                 
                 // player.yMomentum
             }
+            console.log(collResult.overlap_x, collResult.overlap_y);
+            
         }
     }
-    console.log(collResult.overlap_x, collResult.overlap_y);
     
     if (!xCollided){
-        console.log('movingX');
+        // console.log('movingX');
         player.x += player.vx;
     }
     if (!yCollided){
-        console.log('movingY');
+        // console.log('movingY');
         player.y += player.vy;
     }
     
@@ -225,8 +217,7 @@ function setPlayer() {
     player.position.set(350,500);
     player.maxSpeed = 10;
     player.vx = 0;
-    player.vy = 0;
-    // player.vy = 5;
+    player.vy = 5;
     player.gravity = 0.5;
     player.yMomentum = 0;
     player.jumpHeight = 15;
@@ -245,67 +236,67 @@ function playerMoveInit(){
         up = keyboard('ArrowUp'),
         down = keyboard('ArrowDown');
 
-    // left.press = () => {
-    //     playerMoves.left();
-    // };
-    // left.release = () => {
-    //     if (!right.isDown) {
-    //         playerMoves.stop();
-    //     } else {
-    //         playerMoves.right();
-    //     }
-    // };
-    // up.press = () => {
-    //     if (!player.jump){
-    //         player.jump = true;
-    //     }
-    // };
-    // right.press = () => {
-    //     playerMoves.right();
-    // };
-    // right.release = () => {
-    //     if (!left.isDown) {
-    //         playerMoves.stop();
-    //     } else {
-    //         playerMoves.left();
-    //     }
-    // };
     left.press = () => {
-        player.vx = -5;
-        player.vy = 0;
+        playerMoves.left();
     };
     left.release = () => {
-        if (!right.isDown && player.vy === 0) {
-            player.vx = 0;
+        if (!right.isDown) {
+            playerMoves.stop();
+        } else {
+            playerMoves.right();
         }
     };
     up.press = () => {
-        player.vy = -5;
-        player.vx = 0;
-    };
-    up.release = () => {
-        if (!down.isDown && player.vx === 0) {
-            player.vy = 0;
+        if (!player.jump){
+            player.jump = true;
         }
     };
     right.press = () => {
-        player.vx = 5;
-        player.vy = 0;
+        playerMoves.right();
     };
     right.release = () => {
-        if (!left.isDown && player.vy === 0) {
-            player.vx = 0;
+        if (!left.isDown) {
+            playerMoves.stop();
+        } else {
+            playerMoves.left();
         }
     };
-    down.press = () => {
-        player.vy = 5;
-        player.vx = 0;
-    };
-    down.release = () => {
-        if (!up.isDown && player.vx === 0) {
-            player.vy = 0;
-        }
-    };
+    // left.press = () => {
+    //     player.vx = -5;
+    //     player.vy = 0;
+    // };
+    // left.release = () => {
+    //     if (!right.isDown && player.vy === 0) {
+    //         player.vx = 0;
+    //     }
+    // };
+    // up.press = () => {
+    //     player.vy = -5;
+    //     player.vx = 0;
+    // };
+    // up.release = () => {
+    //     if (!down.isDown && player.vx === 0) {
+    //         player.vy = 0;
+    //     }
+    // };
+    // right.press = () => {
+    //     player.vx = 5;
+    //     player.vy = 0;
+    // };
+    // right.release = () => {
+    //     if (!left.isDown && player.vy === 0) {
+    //         player.vx = 0;
+    //     }
+    // };
+    // down.press = () => {
+    //     player.vy = 5;
+    //     player.vx = 0;
+    // };
+    // down.release = () => {
+    //     if (!up.isDown && player.vx === 0) {
+    //         player.vy = 0;
+    //     }
+    // };
 }
 
 function changeVelocity(intensity, changeTo, velocityVector = 'vx'){
