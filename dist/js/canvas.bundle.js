@@ -1798,18 +1798,6 @@ var collision = new _collisions2.default();
 // Create a Result object for collecting information about the collisions
 var collResult = collision.createResult();
 
-// Create the player (represented by a Circle)
-var collPlayer = collision.createCircle(100, 100, 10);
-
-// Create some walls (represented by Polygons)
-// const wall1 = collision.createPolygon(400, 500, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 1.7);
-// const wall2 = collision.createPolygon(200, 100, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 2.2);
-// const wall3 = collision.createPolygon(400, 50, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 0.7);
-var wall4 = collision.createCircle(150, 946, 30);
-
-// Update the collision system
-collision.update();
-
 // -----------------------------------------------------------
 // -----------------------------------------------------------
 // -----------------------------------------------------------
@@ -1829,6 +1817,18 @@ var app = new Application({
     resolution: 1
 });
 
+var graphics2 = new PIXI.Graphics();
+
+// Create the player (represented by a Circle)
+var collPlayer = collision.createPolygon(0, 0, [[0, 0], [78, 0], [78, 78], [0, 78]]);
+
+// Create some walls (represented by Polygons)
+// const wall1 = collision.createPolygon(400, 500, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 1.7);
+var wall4 = collision.createPolygon(0, 0, [[350, 700], [500, 700], [425, 600]]);
+var line = collision.createPolygon(0, app.renderer.height, [[0, 0], [app.renderer.width, 0]]);
+// Update the collision system
+collision.update();
+
 // laod background
 loader.add('background', '/img/teamfun/Background2.png').add('player', '/img/teamfun/player.png');
 
@@ -1836,6 +1836,10 @@ var tilemap = {};
 var player = void 0;
 var playerMoves = {
     speed: 5,
+    blockLeft: false,
+    blockRight: false,
+    blockBottom: false,
+    blockTop: false,
     left: function left() {
         // player.vx = -this.speed;
         player.movingDirection = 'left';
@@ -1858,11 +1862,19 @@ function setup() {
     tilemap.draw();
     setPlayer();
     // create a new Graphics object
+
+    graphics2.beginFill(0xfff012, 1);
+    graphics2.drawPolygon([0, 0, 78, 0, 78, 78, 0, 78]);
+    graphics2.endFill();
+    app.stage.addChild(graphics2);
+
     var graphics = new PIXI.Graphics();
     // set a fill color and an opacity
     graphics.beginFill(0xfff012, 1);
     // draw a rectangle using the arguments as:  x, y, radius
-    graphics.drawCircle(150, 946, 30);
+    graphics.drawPolygon([350, 700, 500, 700, 425, 600]);
+    graphics.drawPolygon([0, 0, 128, 0, 128, 128, 0, 128]);
+    graphics.endFill();
     // add it to your scene
     app.stage.addChild(graphics);
     app.ticker.add(function (delta) {
@@ -1871,67 +1883,62 @@ function setup() {
 }
 console.log('height----------', app.renderer.height);
 function update(delta) {
+    // Update the collision system
     player.prevX = player.x;
     player.prevY = player.y;
-    if (player.y + player.height + player.vy > app.renderer.height) {
-        player.vy = 0;
-        player.y = app.renderer.height - player.height;
-        player.jump = false;
-        player.yMomentum = 0;
-        player.jumpHeight = 15;
-    }
     // jump
     if (player.jump) {
         player.yMomentum += player.gravity;
         player.vy = -player.jumpHeight + player.yMomentum;
-    }
+    } else {}
+    // player.vy = 5;
+
     //move
-    if (player.movingDirection == 'right') {
-        if (yChanged()) {
-            player.speedPerFrame = player.speedPerFrameInTheAir;
-        } else {
-            player.speedPerFrame = player.speedPerFrameOnTheGround;
-        }
-        if (player.vx <= player.maxSpeed) player.vx += player.speedPerFrame;
-    } else if (player.movingDirection == 'left') {
-        if (yChanged()) {
-            player.speedPerFrame = player.speedPerFrameInTheAir;
-        } else {
-            player.speedPerFrame = player.speedPerFrameOnTheGround;
-        }
-        if (player.vx >= -player.maxSpeed) player.vx -= player.speedPerFrame;
-    } else {
-        if (yChanged()) {
-            player.speedPerFrame = player.speedPerFrameFalling;
-        } else {
-            player.speedPerFrame = player.speedPerFrameOnTheGround;
-        }
-        if (player.vx + player.speedPerFrame < 0) {
-            player.vx += player.speedPerFrame;
-        } else if (player.vx - player.speedPerFrame > 0) {
-            player.vx -= player.speedPerFrame;
-        } else {
-            player.vx = 0;
-        }
-    }
-
-    player.x += player.vx;
-    player.y += player.vy;
-
-    collPlayer.x = player.x;
-    collPlayer.y = player.y;
-
-    console.log(player.x, player.y);
-
-    // Update the collision system
-    collision.update();
-    //check for colission
+    // if (player.movingDirection == 'right'){
+    //     if (yChanged()){
+    //         player.speedPerFrame = player.speedPerFrameInTheAir;
+    //     } else {
+    //         player.speedPerFrame = player.speedPerFrameOnTheGround;
+    //     }
+    //     if (player.vx <= player.maxSpeed)
+    //         player.vx += player.speedPerFrame;
+    // } else if (player.movingDirection == 'left') {
+    //     if (yChanged()){
+    //         player.speedPerFrame = player.speedPerFrameInTheAir;
+    //     } else {
+    //         player.speedPerFrame = player.speedPerFrameOnTheGround;
+    //     }
+    //     if (player.vx >= -player.maxSpeed)
+    //         player.vx -= player.speedPerFrame;
+    // } else {
+    //     if (yChanged()){
+    //         player.speedPerFrame = player.speedPerFrameFalling;
+    //     } else {
+    //         player.speedPerFrame = player.speedPerFrameOnTheGround;
+    //     }
+    //     if (player.vx + player.speedPerFrame < 0){
+    //         player.vx += player.speedPerFrame;
+    //     } else if (player.vx - player.speedPerFrame > 0){
+    //         player.vx -= player.speedPerFrame;
+    //     } else {
+    //         player.vx = 0;
+    //     }
+    // }
     checkCollision();
 }
 
 function checkCollision() {
     // Get any potential collisions (this quickly rules out walls that have no chance of colliding with the collPlayer)
+
+    collPlayer.x = player.x + player.vx;
+    collPlayer.y = player.y + player.vy;
+    graphics2.x = collPlayer.x;
+    graphics2.y = collPlayer.y;
+
+    collision.update();
     var collPotentials = collPlayer.potentials();
+    var yCollided = false;
+    var xCollided = false;
 
     // Loop through the potential wall collisions
     var _iteratorNormalCompletion = true;
@@ -1944,11 +1951,36 @@ function checkCollision() {
 
             // Test if the collPlayer collides with the wall
             if (collPlayer.collides(wall, collResult)) {
-                console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',  collResult, collResult.overlap_x);
 
                 // Push the collPlayer out of the wall
-                // collPlayer.x -= collResult.overlap * collResult.overlap_x;
-                // collPlayer.y -= collResult.overlap * collResult.overlap_y;
+                console.log('!!!!!!!!!!!!!!overlap', collResult.overlap);
+
+                if (collResult.overlap_x == -1) {
+                    xCollided = true;
+                    // player.x = Math.round(player.x + collResult.overlap - 1);
+                    player.vx = 0;
+                    return 'left';
+                }
+                if (collResult.overlap_x == 1) {
+                    xCollided = true;
+                    player.vx = 0;
+                    // player.x = Math.round(player.x - collResult.overlap + 1);
+                    return 'right';
+                }
+                if (collResult.overlap_y == 1) {
+                    yCollided = true;
+                    console.log('y 1');
+                    player.yMomentum = 0;
+                    player.vy = 0;
+                    player.jump = false;
+                }
+                if (collResult.overlap_y == -1) {
+                    yCollided = true;
+                    console.log('y -1');
+
+                    // player.yMomentum
+                }
             }
         }
     } catch (err) {
@@ -1964,6 +1996,17 @@ function checkCollision() {
                 throw _iteratorError;
             }
         }
+    }
+
+    console.log(collResult.overlap_x, collResult.overlap_y);
+
+    if (!xCollided) {
+        console.log('movingX');
+        player.x += player.vx;
+    }
+    if (!yCollided) {
+        console.log('movingY');
+        player.y += player.vy;
     }
 }
 
@@ -1984,12 +2027,14 @@ function yChanged() {
 
 function setPlayer() {
     player = new PIXI.Sprite(PIXI.loader.resources['player'].texture);
-    player.position.set(150, 800);
+    player.position.set(350, 500);
     player.maxSpeed = 10;
     player.vx = 0;
-    player.vy = 5;
+    player.vy = 0;
+    // player.vy = 5;
     player.gravity = 0.5;
     player.yMomentum = 0;
+    player.jumpHeight = 15;
     player.speedPerFrameOnTheGround = player.maxSpeed / 7;
     player.speedPerFrameInTheAir = player.maxSpeed / 15;
     player.speedPerFrameFalling = player.maxSpeed / 35;
@@ -2002,31 +2047,68 @@ function setPlayer() {
 function playerMoveInit() {
     var left = keyboard('ArrowLeft'),
         right = keyboard('ArrowRight'),
-        up = keyboard('ArrowUp');
+        up = keyboard('ArrowUp'),
+        down = keyboard('ArrowDown');
 
+    // left.press = () => {
+    //     playerMoves.left();
+    // };
+    // left.release = () => {
+    //     if (!right.isDown) {
+    //         playerMoves.stop();
+    //     } else {
+    //         playerMoves.right();
+    //     }
+    // };
+    // up.press = () => {
+    //     if (!player.jump){
+    //         player.jump = true;
+    //     }
+    // };
+    // right.press = () => {
+    //     playerMoves.right();
+    // };
+    // right.release = () => {
+    //     if (!left.isDown) {
+    //         playerMoves.stop();
+    //     } else {
+    //         playerMoves.left();
+    //     }
+    // };
     left.press = function () {
-        playerMoves.left();
+        player.vx = -5;
+        player.vy = 0;
     };
     left.release = function () {
-        if (!right.isDown) {
-            playerMoves.stop();
-        } else {
-            playerMoves.right();
+        if (!right.isDown && player.vy === 0) {
+            player.vx = 0;
         }
     };
     up.press = function () {
-        if (!player.jump) {
-            player.jump = true;
+        player.vy = -5;
+        player.vx = 0;
+    };
+    up.release = function () {
+        if (!down.isDown && player.vx === 0) {
+            player.vy = 0;
         }
     };
     right.press = function () {
-        playerMoves.right();
+        player.vx = 5;
+        player.vy = 0;
     };
     right.release = function () {
-        if (!left.isDown) {
-            playerMoves.stop();
-        } else {
-            playerMoves.left();
+        if (!left.isDown && player.vy === 0) {
+            player.vx = 0;
+        }
+    };
+    down.press = function () {
+        player.vy = 5;
+        player.vx = 0;
+    };
+    down.release = function () {
+        if (!up.isDown && player.vx === 0) {
+            player.vy = 0;
         }
     };
 }
