@@ -1,12 +1,56 @@
 // import utils from './utils'
 // import { log } from 'util';
-import Collisions from 'collisions';
-// Create the collision system
-const collision = new Collisions();
+let world,
+    characterBody,
+    cameraPos = [0, 0],
+    player,
+    fixedDeltaTime = 1 / 60,
+    graphics,
+    maxSubSteps = 10;
+// Init world
+world = new p2.World();
 
-// Create a Result object for collecting information about the collisions
-const collResult = collision.createResult();
+// Collision groups
+const SCENERY_GROUP = 0x01;
+const PLAYER_GROUP = 0x02;
 
+// Add a character body
+let characterShape = new p2.Box({
+    width: 1,
+    height: 1.5,
+    collisionGroup: PLAYER_GROUP
+});
+characterBody = new p2.Body({
+    mass: 0,
+    position:[800,800],
+    fixedRotation: true,
+    damping: 0,
+    type: p2.Body.KINEMATIC
+});
+characterBody.addShape(characterShape);
+world.addBody(characterBody);
+
+// Create the character controller
+player = new p2.KinematicCharacterController({
+    world: world,
+    body: characterBody,
+    collisionMask: SCENERY_GROUP,
+    velocityXSmoothing: 0.0001,
+    timeToJumpApex: 0.4,
+    skinWidth: 0.1
+});
+
+// Update the character controller after each physics tick.
+world.on('postStep', function(){
+    player.update(world.lastTimeStep);
+});
+
+p2.vec2.lerp(
+    cameraPos,
+    cameraPos,
+    [-characterBody.interpolatedPosition[0], -characterBody.interpolatedPosition[1]],
+    0.05
+);
 
 // -----------------------------------------------------------
 // -----------------------------------------------------------
@@ -27,44 +71,14 @@ const app = new Application({
     resolution: 1
 });
 
-var graphics2 = new PIXI.Graphics();
-
-// Create the player (represented by a Circle)
-const collPlayer = collision.createPolygon(0, 0, [[0,0], [78,0], [78,78], [0,78]]);
-
-// Create some walls (represented by Polygons)
-// const wall1 = collision.createPolygon(700, 500, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 1.7);
-const wall4 = collision.createPolygon(0,0,[[350,850], [425,700], [700,850], [425, 900]]);
-const line = collision.createPolygon(0, app.renderer.height, [[0, 0], [app.renderer.width, 0]]);
-// Update the collision system
-collision.update();
-
 
 // laod background
 loader.add('background', '/img/teamfun/Background2.png')
 .add('player', '/img/teamfun/player.png');
 
 const tilemap = {};
-let player;
-let playerMoves = {
-    speed: 5,
-    blockLeft: false,
-    blockRight: false,
-    blockBottom: false,
-    blockTop: false,
-    left() {
-        // player.vx = -this.speed;
-        player.movingDirection = 'left';
-    },
-    right() {
-        // player.vx = this.speed;
-        player.movingDirection = 'right';
-    },
-    stop() {
-        // player.vx = 0;
-        player.movingDirection = '';
-    }
-}
+let playerView;
+
 parseTileMap('/img/teamfun/tilemapjsontestcsv.json');
 
 
@@ -75,236 +89,56 @@ function setup() {
     setBackground();
     tilemap.draw();
     setPlayer();
-    // create a new Graphics object
-    
-    graphics2.beginFill(0xfff012,1);
-    graphics2.drawPolygon([0,0, 78,0, 78,78, 0,78]);
-    graphics2.endFill();
-    app.stage.addChild(graphics2);
-
-    var graphics = new PIXI.Graphics();
-    // set a fill color and an opacity
-    graphics.beginFill(0xfff012,1);
-    // draw a rectangle using the arguments as:  x, y, radius
-    graphics.drawPolygon([350,850, 425,700, 700,850, 425,900]);
-    graphics.drawPolygon([0, 0, 128,0, 128, 128, 0, 128]);
-    graphics.endFill();
-    // add it to your scene
-    app.stage.addChild(graphics);
     app.ticker.add(delta => update(delta));
+    console.log(world.bodies);
+    
 }
 console.log('height----------',app.renderer.height);
+render();
 function update(delta) {
-    // Update the collision system
-    player.prevX = player.x;
-    player.prevY = player.y;
-    // jump
-    if (player.jump){
-        player.yMomentum += player.gravity;
-        player.vy = -player.jumpHeight + player.yMomentum;
-    } else {
-        player.vy = 5;
-    }
-    //move
-    if (player.movingDirection == 'right'){
-        if (yChanged()){
-            player.speedPerFrame = player.speedPerFrameInTheAir;
-        } else {
-            player.speedPerFrame = player.speedPerFrameOnTheGround;
-        }
-        if (player.vx <= player.maxSpeed)
-            player.vx += player.speedPerFrame;
-    } else if (player.movingDirection == 'left') {
-        if (yChanged()){
-            player.speedPerFrame = player.speedPerFrameInTheAir;
-        } else {
-            player.speedPerFrame = player.speedPerFrameOnTheGround;
-        }
-        if (player.vx >= -player.maxSpeed)
-            player.vx -= player.speedPerFrame;
-    } else {
-        if (yChanged()){
-            player.speedPerFrame = player.speedPerFrameFalling;
-        } else {
-            player.speedPerFrame = player.speedPerFrameOnTheGround;
-        }
-        if (player.vx + player.speedPerFrame < 0){
-            player.vx += player.speedPerFrame;
-        } else if (player.vx - player.speedPerFrame > 0){
-            player.vx -= player.speedPerFrame;
-        } else {
-            player.vx = 0;
-        }
-    }
-    checkCollision();
-}
-
-
-function checkCollision() {
-    // Get any potential collisions (this quickly rules out walls that have no chance of colliding with the collPlayer)
-
-    collPlayer.x = player.x + player.vx;
-    collPlayer.y = player.y + player.vy;
-    graphics2.x = collPlayer.x;
-    graphics2.y = collPlayer.y;
-    
-    collision.update();
-    const collPotentials = collPlayer.potentials();
-    let yCollided = false;
-    let xCollided = false;
-
-    // Loop through the potential wall collisions
-    for(const wall of collPotentials) {
-        // Test if the collPlayer collides with the wall
-        if(collPlayer.collides(wall, collResult)) {
-            // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',  collResult, collResult.overlap_x);
-
-            // Push the collPlayer out of the wall
-            console.log('y ', collResult.overlap_y);
-            console.log('!!!!!!!!!!!!!!collResult',collResult);
-            if (Math.abs(collResult.overlap_x) != 0){
-                xCollided = true;
-            }
-            if (1 - collResult.overlap_y < 1){
-                yCollided = true;
-                console.log('y 1');
-                player.yMomentum = 0;
-                player.vy = 0;
-                player.jump = false;
-            }
-            if (1 - collResult.overlap_y > 1){
-                yCollided = true;
-                console.log('y -1');
-                
-                // player.yMomentum
-            }
-            console.log(collResult.overlap_x, collResult.overlap_y);
-            
-        }
-    }
-    
-    if (!xCollided){
-        // console.log('movingX');
-        player.x += player.vx;
-    }
-    if (!yCollided){
-        // console.log('movingY');
-        player.y += player.vy;
-    }
-    
+    world.step(1/60);
+    // console.log(player.input[0]);
+    // Transfer positions of the physics objects to Pixi.js
+    graphics.position.x = characterBody.position[0];
+    graphics.position.y = characterBody.position[1];
+    console.log(graphics.position);
     
 }
 
-function xChanged() {
-    if (player.x !== player.prevX){
-        return false;
-    } else {
-        return true
+function render() {
+    for(var i=0; i<world.bodies.length; i++){
+        var body = world.bodies[i];
+        drawBody(body);
     }
 }
-function yChanged() {
-    if (player.y !== player.prevY){
-        return false;
-    } else {
-        return true
+
+function drawBody(body){
+    let x = body.interpolatedPosition[0],
+        y = body.interpolatedPosition[1],
+        boxShape = body.shapes[0];
+
+    graphics = new PIXI.Graphics();
+
+    if(boxShape instanceof p2.Box){
+      graphics.beginFill(0xff0000);
+      graphics.drawRect(-boxShape.width/2, -boxShape.height/2, boxShape.width, boxShape.height);
     }
+    
+    console.log(graphics);
+    
+    // Add the box to our container
+    app.stage.addChild(graphics);
 }
 
 function setPlayer() {
-    player = new PIXI.Sprite(
+    playerView = new PIXI.Sprite(
         PIXI.loader.resources['player'].texture
     );
-    player.position.set(350,500);
-    player.maxSpeed = 10;
-    player.vx = 0;
-    player.vy = 5;
-    player.gravity = 0.5;
-    player.yMomentum = 0;
-    player.jumpHeight = 15;
-    player.speedPerFrameOnTheGround = player.maxSpeed/7;
-    player.speedPerFrameInTheAir = player.maxSpeed/15;
-    player.speedPerFrameFalling = player.maxSpeed/35;
-    player.speedPerFrame = player.speedPerFrameOnTheGround;
+    playerView.position.set(350,500);
+    playerView.vx = 0;
+    playerView.vy = 5;
 
-    app.stage.addChild(player);
-    playerMoveInit();
-}
-
-function playerMoveInit(){
-    let left = keyboard('ArrowLeft'),
-        right = keyboard('ArrowRight'),
-        up = keyboard('ArrowUp'),
-        down = keyboard('ArrowDown');
-
-    left.press = () => {
-        playerMoves.left();
-    };
-    left.release = () => {
-        if (!right.isDown) {
-            playerMoves.stop();
-        } else {
-            playerMoves.right();
-        }
-    };
-    up.press = () => {
-        if (!player.jump){
-            player.jump = true;
-        }
-    };
-    right.press = () => {
-        playerMoves.right();
-    };
-    right.release = () => {
-        if (!left.isDown) {
-            playerMoves.stop();
-        } else {
-            playerMoves.left();
-        }
-    };
-    // left.press = () => {
-    //     player.vx = -5;
-    //     player.vy = 0;
-    // };
-    // left.release = () => {
-    //     if (!right.isDown && player.vy === 0) {
-    //         player.vx = 0;
-    //     }
-    // };
-    // up.press = () => {
-    //     player.vy = -5;
-    //     player.vx = 0;
-    // };
-    // up.release = () => {
-    //     if (!down.isDown && player.vx === 0) {
-    //         player.vy = 0;
-    //     }
-    // };
-    // right.press = () => {
-    //     player.vx = 5;
-    //     player.vy = 0;
-    // };
-    // right.release = () => {
-    //     if (!left.isDown && player.vy === 0) {
-    //         player.vx = 0;
-    //     }
-    // };
-    // down.press = () => {
-    //     player.vy = 5;
-    //     player.vx = 0;
-    // };
-    // down.release = () => {
-    //     if (!up.isDown && player.vx === 0) {
-    //         player.vy = 0;
-    //     }
-    // };
-}
-
-function changeVelocity(intensity, changeTo, velocityVector = 'vx'){
-    if (player[velocityVector] < changeTo){
-        player[velocityVector] += intensity;
-    } else {
-        player[velocityVector] -= intensity;
-    }
+    app.stage.addChild(playerView);
 }
 
 function setBackground() {
@@ -385,57 +219,58 @@ function parseTileMap(tilemapSource){
     }
 }
 
-function Player(x, y) {
-    this.x = x;
-}
-
 // Keyboard -------------------------------------------------
 
-function keyboard(value) {
-    let key = {};
-    key.value = value;
-    key.isDown = false;
-    key.isUp = true;
-    key.press = undefined;
-    key.release = undefined;
-    //The `downHandler`
-    key.downHandler = event => {
-      if (event.key === key.value) {
-        if (key.isUp && key.press) key.press();
-        key.isDown = true;
-        key.isUp = false;
-        event.preventDefault();
-      }
-    };
+// Set up key listeners
+let left = 0, right = 0;
+window.addEventListener('keydown', function(evt){
+  switch(evt.keyCode){
+    case 38: // up key
+    case 32: player.setJumpKeyState(true); break; // space key
+    case 39: right = 1; break; // right key
+    case 37: left = 1; break; // left key
+  }
+  player.input[0] = right - left;
+  console.log(evt.keyCode);
   
-    //The `upHandler`
-    key.upHandler = event => {
-      if (event.key === key.value) {
-        if (key.isDown && key.release) key.release();
-        key.isDown = false;
-        key.isUp = true;
-        event.preventDefault();
-      }
-    };
-  
-    //Attach event listeners
-    const downListener = key.downHandler.bind(key);
-    const upListener = key.upHandler.bind(key);
-    
-    window.addEventListener(
-      "keydown", downListener, false
-    );
-    window.addEventListener(
-      "keyup", upListener, false
-    );
-    
-    // Detach event listeners
-    key.unsubscribe = () => {
-      window.removeEventListener("keydown", downListener);
-      window.removeEventListener("keyup", upListener);
-    };
-    
-    return key;
-}
+});
+window.addEventListener('keyup', function(evt){
+  switch(evt.keyCode){
+    case 38: // up
+    case 32: player.setJumpKeyState(false); break;
+    case 39: right = 0; break;
+    case 37: left = 0; break;
+  }
+  player.input[0] = right - left;
+});
 
 // Keyboard END -------------------------------------------------
+
+
+
+function addStaticCircle(x, y, angle, radius){
+    var shape = new p2.Circle({
+      collisionGroup: SCENERY_GROUP,
+      radius: radius
+    });
+    var body = new p2.Body({
+      position: [x, y],
+      angle: angle
+    });
+    body.addShape(shape);
+    world.addBody(body);
+}
+
+function addStaticBox(x, y, angle, width, height){
+    var shape = new p2.Box({
+      collisionGroup: SCENERY_GROUP,
+      width: width,
+      height: height
+    });
+    var body = new p2.Body({
+      position: [x, y],
+      angle: angle
+    });
+    body.addShape(shape);
+    world.addBody(body);
+}

@@ -10,8 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "collisions": "^2.0.13",
-    "gsap": "^2.0.1"
+    "gsap": "^2.0.1",
+    "p2": "^0.7.1"
   },
   "devDependencies": {
     "babel-core": "^6.26.3",
