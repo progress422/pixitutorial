@@ -51,7 +51,29 @@
                  "id":0,
                  "image":"land\/DirtLeftCorner.png",
                  "imageheight":128,
-                 "imagewidth":128
+                 "imagewidth":128,
+                 "objectgroup":
+                    {
+                     "draworder":"index",
+                     "name":"",
+                     "objects":[
+                            {
+                             "height":128,
+                             "id":1,
+                             "name":"",
+                             "rotation":0,
+                             "type":"rectangle",
+                             "visible":true,
+                             "width":128,
+                             "x":0,
+                             "y":0
+                            }],
+                     "opacity":1,
+                     "type":"objectgroup",
+                     "visible":true,
+                     "x":0,
+                     "y":0
+                    }
                 }, 
                 {
                  "id":1,
@@ -81,7 +103,7 @@
                                      "y":128
                                     }],
                              "rotation":0,
-                             "type":"",
+                             "type":"polygon",
                              "visible":true,
                              "width":0,
                              "x":0,
@@ -105,15 +127,15 @@
                      "name":"",
                      "objects":[
                             {
-                             "height":32,
-                             "id":5,
+                             "height":96,
+                             "id":6,
                              "name":"",
                              "rotation":0,
-                             "type":"",
+                             "type":"rectangle",
                              "visible":true,
                              "width":128,
                              "x":0,
-                             "y":0
+                             "y":32
                             }],
                      "opacity":1,
                      "type":"objectgroup",

@@ -281,6 +281,7 @@ function parseTileMap(tilemapSource){
         tilemap.tileWidth = data.tilewidth;
         tilemap.tileHeight = data.tileheight;
         tilemap.tilemapPrefix = 'tileimg';
+        tilemap.collisions = {};
         tilemap.layers = data.layers.map((layer) => {
             return {
                 data: layer.data
@@ -292,9 +293,11 @@ function parseTileMap(tilemapSource){
                 tiles: tileset.tiles
             }
         });
-        console.log('Tilemap',tilemap);
+        console.log('Tilemap',tilemap.tilesets);
         console.log('------------------------------------');
         tilemap.loadTiles();
+        console.log(tilemap.collisions);
+        
     });
     tilemap.loadTiles = function() {
         let tileImagesArr = [];
@@ -303,12 +306,22 @@ function parseTileMap(tilemapSource){
         this.tilesets.map((tileset) => {
             let tileStartId = tileset.firstgid;
             tileImagesArr = [...tileImagesArr, ...tileset.tiles.map((tile) => {
+                let tileId = tile.id + tileStartId;
+                //collisions
+                if (tile.objectgroup){
+                    tile.objectgroup.objects.map((collision) => {
+                        tilemap.collisions[tileId] = collision;
+                    })
+                }
+                //tile images
                 return {
-                    'alias': tilemapPrefix + (tile.id + tileStartId),
+                    'alias': tilemapPrefix + tileId,
                     'src': tile.image
                 }
             })]
         });
+        console.log(tileImagesArr);
+        
         // load images to pixi
         tileImagesArr.map((img) => loader.add(img.alias, pathToImages + img.src));
         loader.load(init);
@@ -325,6 +338,7 @@ function parseTileMap(tilemapSource){
                     let tileY = rowNumber * tileHeight;
                     
                     tilemap.setTileOnMap(tileX,tileY,`${tilemap.tilemapPrefix}${tile}`);
+                    tilemap.setCollisions(tileX,tileY,tile);
                 }
                 if ((index + 1)%cols == 0)
                     rowNumber += 1;
@@ -338,5 +352,15 @@ function parseTileMap(tilemapSource){
         tile.position.set(x,-(y-tile.height));
         tile.scale.y = -1;
         app.stage.addChild(tile);
+    }
+    tilemap.setCollisions = function(x,y,id) {
+        let collisionData = tilemap.collisions[id];
+        if (collisionData){
+            if (collisionData.type = 'rectangle'){
+                console.log(collisionData);
+                // addStaticBox(0, -800, 500, 5);
+            }
+
+        }
     }
 }
