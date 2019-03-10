@@ -1,18 +1,3 @@
-// import utils from './utils'
-// import { log } from 'util';
-import Collisions from 'collisions';
-// Create the collision system
-const collision = new Collisions();
-
-// Create a Result object for collecting information about the collisions
-const collResult = collision.createResult();
-
-
-// -----------------------------------------------------------
-// -----------------------------------------------------------
-// -----------------------------------------------------------
-// -----------------------------------------------------------
-
 //Aliases
 const Application = PIXI.Application,
     loader = PIXI.loader,
@@ -26,18 +11,6 @@ const app = new Application({
     height: 1024,
     resolution: 1
 });
-
-var graphics2 = new PIXI.Graphics();
-
-// Create the player (represented by a Circle)
-const collPlayer = collision.createPolygon(0, 0, [[0,0], [78,0], [78,78], [0,78]]);
-
-// Create some walls (represented by Polygons)
-// const wall1 = collision.createPolygon(700, 500, [[-60, -20], [60, -20], [60, 20], [-60, 20]], 1.7);
-const wall4 = collision.createPolygon(0,0,[[350,850], [425,700], [700,850], [425, 900]]);
-const line = collision.createPolygon(0, app.renderer.height, [[0, 0], [app.renderer.width, 0]]);
-// Update the collision system
-collision.update();
 
 
 // laod background
