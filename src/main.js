@@ -35,7 +35,7 @@ let playerView;
 
 // laod background
 loader.add('background', '/img/teamfun/Background2.png')
-.add('player', '/img/teamfun/player.png');
+.add('player', '/img/teamfun/player-test.png');
 
 parseTileMap('/img/teamfun/tilemapjsontestcsv.json');
 
@@ -59,7 +59,7 @@ function init() {
     setPlayer();
 
     // Add some scenery
-    // addStaticBox(0, -800, 500, 5);
+    addStaticBox(0, 0, 1, 5000);
     // addStaticBox(0, -980, 100, 1);
     // addStaticPolygon(0,-400, [[0,3], [0,1], [2,2]]);
     addWalls();
@@ -146,7 +146,7 @@ function setBackground() {
 }
 
 function addStaticPolygon(x, y, vertices) {
-    console.log(vertices);
+    console.log('vertices',vertices);
     var shape = new p2.Convex({
         collisionGroup: SCENERY_GROUP,
         vertices
@@ -166,7 +166,7 @@ function addStaticBox(x, y, width, height) {
     });
     var body = new p2.Body({
         position: [x, y]
-    });
+    });    
     body.addShape(shape);
     world.addBody(body);
 }
@@ -178,7 +178,7 @@ function addWalls(){
 
     let horizontalBottom = new p2.Body();
     horizontalBottom.addShape(new p2.Plane());
-    horizontalBottom.position = [0,-970];
+    horizontalBottom.position = [0,-985];
     // horizontalBottom.position = [0,-app.renderer.screen.height]
     world.addBody(horizontalBottom);
     
@@ -208,9 +208,7 @@ function drawBody(body) {
         ctx.arc(0, 0, s.radius, 0, 2 * Math.PI);
         ctx.fill();
         ctx.closePath();
-    } else if (s instanceof p2.Convex) {
-        console.log('sssss',s);
-        
+    } else if (s instanceof p2.Convex) {        
         ctx.beginPath();
         ctx.moveTo(s.vertices[0][0],s.vertices[0][1]);
         for (let i = 1; i < s.vertices.length; i++) {
@@ -266,7 +264,8 @@ var lastTime;
 function animate(time) {
     playerView.x = characterBody.position[0];
     playerView.y = characterBody.position[1];
-        
+    console.log(characterBody.position[0], characterBody.position[0]);
+    
     requestAnimationFrame(animate);
 
     // Compute elapsed time since last frame
@@ -330,6 +329,7 @@ function parseTileMap(tilemapSource){
                             polygonArray = [...polygonArray,...collision.polygon.map((point) => {
                                 return [point.x, point.y];
                             })];
+                            // polygonArray = flipArrayY(polygonArray);
                             tilemap.collisions[tileId].polygonArr = polygonArray;
                         }
                         tilemap.collisions[tileId].image = {
@@ -375,6 +375,8 @@ function parseTileMap(tilemapSource){
             PIXI.loader.resources[alias].texture
         );
         tile.position.set(x,-(y-tile.height));
+        console.log('tile Y',-(y-tile.height));
+        
         tile.scale.y = -1;
         app.stage.addChild(tile);
     }
@@ -384,7 +386,7 @@ function parseTileMap(tilemapSource){
             let collisionX = x + collisionData.x;
             let collisionY = y - collisionData.image.height + collisionData.y;
             if (collisionData.polygon != undefined){
-                console.log('polygon',collisionData);                
+                console.log('polygon',collisionData);
                 addStaticPolygon(collisionX,-collisionY, collisionData.polygonArr);
             } else if (collisionData.ellipse != undefined) {
                 // console.log('ellipse', collisionData);
@@ -397,4 +399,13 @@ function parseTileMap(tilemapSource){
 
         }
     }
+}
+
+function flipArrayY(arr) {
+    const maxY = 0;
+    const minY = 0;
+    arr.map((point) => {
+        console.log(4);
+        
+    });
 }
