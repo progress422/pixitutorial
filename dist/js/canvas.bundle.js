@@ -81,15 +81,15 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/canvas.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/main.js");
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ "./src/canvas.js":
-/*!***********************!*\
-  !*** ./src/canvas.js ***!
-  \***********************/
+/***/ "./src/main.js":
+/*!*********************!*\
+  !*** ./src/main.js ***!
+  \*********************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -98,61 +98,20 @@
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-// import utils from './utils'
-// import { log } from 'util';
-var world = void 0,
-    characterBody = void 0,
-    cameraPos = [0, 0],
-    player = void 0,
-    fixedDeltaTime = 1 / 60,
-    graphics = void 0,
-    maxSubSteps = 10;
-// Init world
-world = new p2.World();
+var canvas;
+var ctx;
+var w, h;
+var cameraPos = [0, 0];
+var fixedDeltaTime = 1 / 60;
+var maxSubSteps = 10;
+var world;
+var characterBody;
+var player;
 
 // Collision groups
 var SCENERY_GROUP = 0x01;
 var PLAYER_GROUP = 0x02;
 
-// Add a character body
-var characterShape = new p2.Box({
-    width: 1,
-    height: 1.5,
-    collisionGroup: PLAYER_GROUP
-});
-characterBody = new p2.Body({
-    mass: 0,
-    position: [800, 800],
-    fixedRotation: true,
-    damping: 0,
-    type: p2.Body.KINEMATIC
-});
-characterBody.addShape(characterShape);
-world.addBody(characterBody);
-
-// Create the character controller
-player = new p2.KinematicCharacterController({
-    world: world,
-    body: characterBody,
-    collisionMask: SCENERY_GROUP,
-    velocityXSmoothing: 0.0001,
-    timeToJumpApex: 0.4,
-    skinWidth: 0.1
-});
-
-// Update the character controller after each physics tick.
-world.on('postStep', function () {
-    player.update(world.lastTimeStep);
-});
-
-p2.vec2.lerp(cameraPos, cameraPos, [-characterBody.interpolatedPosition[0], -characterBody.interpolatedPosition[1]], 0.05);
-
-// -----------------------------------------------------------
-// -----------------------------------------------------------
-// -----------------------------------------------------------
-// -----------------------------------------------------------
-
-//Aliases
 var Application = PIXI.Application,
     loader = PIXI.loader,
     resources = PIXI.loader.resources,
@@ -163,69 +122,119 @@ var Application = PIXI.Application,
 var app = new Application({
     width: 1920,
     height: 1024,
-    resolution: 1
+    resolution: 0.7
 });
 
-// laod background
-loader.add('background', '/img/teamfun/Background2.png').add('player', '/img/teamfun/player.png');
+var zoom = 1;
+
+// app.stage.scale.x = zoom;
+app.stage.scale.y = -1;
 
 var tilemap = {};
 var playerView = void 0;
+
+// laod background
+loader.add('background', '/img/teamfun/Background2.png').add('player', '/img/teamfun/player.png');
 
 parseTileMap('/img/teamfun/tilemapjsontestcsv.json');
 
 document.body.appendChild(app.view);
 
-function setup() {
+function init() {
     setBackground();
+
+    // Init canvas
+    canvas = document.getElementById("myCanvas");
+    w = canvas.width;
+    h = canvas.height;
+    ctx = canvas.getContext("2d");
+    ctx.lineWidth = 1 / zoom;
+
+    // Init world
+    world = new p2.World();
+
     tilemap.draw();
     setPlayer();
-    app.ticker.add(function (delta) {
-        return update(delta);
+
+    // Add some scenery
+    // addStaticBox(0, -800, 500, 5);
+    // addStaticBox(0, -980, 100, 1);
+    // addStaticPolygon(0,-400, [[0,3], [0,1], [2,2]]);
+    addWalls();
+
+    // Add a character body
+    var characterShape = new p2.Box({
+        width: 78,
+        height: 78,
+        collisionGroup: PLAYER_GROUP
     });
-    console.log(world.bodies);
-}
-console.log('height----------', app.renderer.height);
-render();
-function update(delta) {
-    world.step(1 / 60);
-    // console.log(player.input[0]);
-    // Transfer positions of the physics objects to Pixi.js
-    graphics.position.x = characterBody.position[0];
-    graphics.position.y = characterBody.position[1];
-    console.log(graphics.position);
-}
+    characterBody = new p2.Body({
+        mass: 0,
+        position: [60, -600],
+        fixedRotation: true,
+        damping: 0,
+        type: p2.Body.KINEMATIC
+    });
+    characterBody.addShape(characterShape);
+    world.addBody(characterBody);
 
-function render() {
-    for (var i = 0; i < world.bodies.length; i++) {
-        var body = world.bodies[i];
-        drawBody(body);
-    }
-}
+    // Create the character controller
+    player = new p2.KinematicCharacterController({
+        world: world,
+        body: characterBody,
+        collisionMask: SCENERY_GROUP,
+        velocityXSmoothing: 0.0001,
+        timeToJumpApex: 0.4,
+        skinWidth: 0.1,
+        moveSpeed: 300
+    });
 
-function drawBody(body) {
-    var x = body.interpolatedPosition[0],
-        y = body.interpolatedPosition[1],
-        boxShape = body.shapes[0];
+    player.gravity = -800;
+    player.maxJumpVelocity = 500;
+    player.minJumpVelocity = 400;
+    console.log(player);
 
-    graphics = new PIXI.Graphics();
+    // Update the character controller after each physics tick.
+    world.on('postStep', function () {
+        player.update(world.lastTimeStep);
+    });
 
-    if (boxShape instanceof p2.Box) {
-        graphics.beginFill(0xff0000);
-        graphics.drawRect(-boxShape.width / 2, -boxShape.height / 2, boxShape.width, boxShape.height);
-    }
+    // Set up key listeners
+    var left = 0,
+        right = 0;
+    window.addEventListener('keydown', function (evt) {
+        switch (evt.keyCode) {
+            case 38: // up key
+            case 32:
+                player.setJumpKeyState(true);break; // space key
+            case 39:
+                right = 1;break; // right key
+            case 37:
+                left = 1;break; // left key
+        }
+        player.input[0] = right - left;
+    });
+    window.addEventListener('keyup', function (evt) {
+        switch (evt.keyCode) {
+            case 38: // up
+            case 32:
+                player.setJumpKeyState(false);break;
+            case 39:
+                right = 0;break;
+            case 37:
+                left = 0;break;
+        }
+        player.input[0] = right - left;
+    });
 
-    console.log(graphics);
-
-    // Add the box to our container
-    app.stage.addChild(graphics);
+    requestAnimationFrame(animate);
 }
 
 function setPlayer() {
     playerView = new PIXI.Sprite(PIXI.loader.resources['player'].texture);
-    playerView.position.set(350, 500);
-    playerView.vx = 0;
-    playerView.vy = 5;
+    // playerView.position.set(350,-500);
+
+    playerView.scale.y = -1;
 
     app.stage.addChild(playerView);
 }
@@ -233,6 +242,132 @@ function setPlayer() {
 function setBackground() {
     var bg = new PIXI.Sprite(PIXI.loader.resources['background'].texture);
     app.stage.addChild(bg);
+}
+
+function addStaticPolygon(x, y, vertices) {
+    console.log(vertices);
+    var shape = new p2.Convex({
+        collisionGroup: SCENERY_GROUP,
+        vertices: vertices
+    });
+    var body = new p2.Body({
+        position: [x, y]
+    });
+    body.addShape(shape);
+    world.addBody(body);
+}
+
+function addStaticBox(x, y, width, height) {
+    var shape = new p2.Box({
+        collisionGroup: SCENERY_GROUP,
+        width: width,
+        height: height
+    });
+    var body = new p2.Body({
+        position: [x, y]
+    });
+    body.addShape(shape);
+    world.addBody(body);
+}
+
+function addWalls() {
+    var horizontalTop = new p2.Body();
+    horizontalTop.addShape(new p2.Plane());
+    world.addBody(horizontalTop);
+
+    var horizontalBottom = new p2.Body();
+    horizontalBottom.addShape(new p2.Plane());
+    horizontalBottom.position = [0, -970];
+    // horizontalBottom.position = [0,-app.renderer.screen.height]
+    world.addBody(horizontalBottom);
+
+    var verticalLeft = new p2.Body({ angle: Math.PI / 2 });
+    verticalLeft.addShape(new p2.Plane({ collisionGroup: SCENERY_GROUP }));
+    world.addBody(verticalLeft);
+
+    var verticalRight = new p2.Body({ angle: Math.PI / 2 });
+    verticalRight.addShape(new p2.Plane({ collisionGroup: SCENERY_GROUP }));
+    verticalRight.position = [app.renderer.screen.width, 0];
+    world.addBody(verticalRight);
+}
+
+function drawBody(body) {
+    var x = body.interpolatedPosition[0],
+        y = body.interpolatedPosition[1],
+        s = body.shapes[0];
+    ctx.save();
+    ctx.translate(x, y); // Translate to the center of the box
+    ctx.rotate(body.interpolatedAngle); // Rotate to the box body frame
+
+    if (s instanceof p2.Box) {
+        ctx.fillRect(-s.width / 2, -s.height / 2, s.width, s.height);
+    } else if (s instanceof p2.Circle) {
+        ctx.beginPath();
+        ctx.arc(0, 0, s.radius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.closePath();
+    } else if (s instanceof p2.Convex) {
+        console.log('sssss', s);
+
+        ctx.beginPath();
+        ctx.moveTo(s.vertices[0][0], s.vertices[0][1]);
+        for (var i = 1; i < s.vertices.length; i++) {
+            s.vertices[i];
+            ctx.lineTo(s.vertices[i][0], s.vertices[i][1]);
+        }
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    ctx.restore();
+}
+
+function render() {
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, w, h);
+
+    // Transform the canvas
+    // Note that we need to flip the y axis since Canvas pixel coordinates
+    // goes from top to bottom, while physics does the opposite.
+    ctx.save();
+    ctx.translate(w / 2, h / 2); // Translate to the center
+    ctx.scale(zoom, -zoom); // Zoom in and flip y axis
+
+    p2.vec2.lerp(cameraPos, cameraPos, [-characterBody.interpolatedPosition[0], -characterBody.interpolatedPosition[1]], 0.05);
+    ctx.translate(cameraPos[0], cameraPos[1]);
+
+    // Draw all bodies
+    ctx.strokeStyle = 'none';
+    ctx.fillStyle = 'red';
+    for (var i = 0; i < world.bodies.length; i++) {
+        var body = world.bodies[i];
+        drawBody(body);
+    }
+
+    // Restore transform
+    ctx.restore();
+}
+
+var lastTime;
+
+// Animation loop
+function animate(time) {
+    playerView.x = characterBody.position[0];
+    playerView.y = characterBody.position[1];
+
+    requestAnimationFrame(animate);
+
+    // Compute elapsed time since last frame
+    var deltaTime = lastTime ? (time - lastTime) / 1000 : 0;
+    deltaTime = Math.min(1 / 10, deltaTime);
+
+    // Move physics bodies forward in time
+    world.step(fixedDeltaTime, deltaTime, maxSubSteps);
+
+    // Render scene
+    render();
+
+    lastTime = time;
 }
 
 function parseTileMap(tilemapSource) {
@@ -247,6 +382,7 @@ function parseTileMap(tilemapSource) {
         tilemap.tileWidth = data.tilewidth;
         tilemap.tileHeight = data.tileheight;
         tilemap.tilemapPrefix = 'tileimg';
+        tilemap.collisions = {};
         tilemap.layers = data.layers.map(function (layer) {
             return {
                 data: layer.data
@@ -258,9 +394,10 @@ function parseTileMap(tilemapSource) {
                 tiles: tileset.tiles
             };
         });
-        console.log('Tilemap', tilemap);
+        console.log('Tilemap', tilemap.tilesets);
         console.log('------------------------------------');
         tilemap.loadTiles();
+        console.log(tilemap.collisions);
     });
     tilemap.loadTiles = function () {
         var tileImagesArr = [];
@@ -269,17 +406,39 @@ function parseTileMap(tilemapSource) {
         this.tilesets.map(function (tileset) {
             var tileStartId = tileset.firstgid;
             tileImagesArr = [].concat(_toConsumableArray(tileImagesArr), _toConsumableArray(tileset.tiles.map(function (tile) {
+                var tileId = tile.id + tileStartId;
+
+                //collisions
+                if (tile.objectgroup) {
+                    tile.objectgroup.objects.map(function (collision) {
+                        tilemap.collisions[tileId] = collision;
+                        if (collision.polygon != undefined) {
+                            var polygonArray = [];
+                            polygonArray = [].concat(_toConsumableArray(polygonArray), _toConsumableArray(collision.polygon.map(function (point) {
+                                return [point.x, point.y];
+                            })));
+                            tilemap.collisions[tileId].polygonArr = polygonArray;
+                        }
+                        tilemap.collisions[tileId].image = {
+                            height: tile.imageheight,
+                            width: tile.imagewidth
+                        };
+                    });
+                }
+                //tile images
                 return {
-                    'alias': tilemapPrefix + (tile.id + tileStartId),
+                    'alias': tilemapPrefix + tileId,
                     'src': tile.image
                 };
             })));
         });
+        console.log(tileImagesArr);
+
         // load images to pixi
         tileImagesArr.map(function (img) {
             return loader.add(img.alias, pathToImages + img.src);
         });
-        loader.load(setup);
+        loader.load(init);
     };
     tilemap.draw = function () {
         var tileWidth = tilemap.tileWidth;
@@ -293,6 +452,7 @@ function parseTileMap(tilemapSource) {
                     var tileY = rowNumber * tileHeight;
 
                     tilemap.setTileOnMap(tileX, tileY, '' + tilemap.tilemapPrefix + tile);
+                    tilemap.setCollisions(tileX, tileY, tile);
                 }
                 if ((index + 1) % cols == 0) rowNumber += 1;
             });
@@ -300,70 +460,28 @@ function parseTileMap(tilemapSource) {
     };
     tilemap.setTileOnMap = function (x, y, alias) {
         var tile = new PIXI.Sprite(PIXI.loader.resources[alias].texture);
-        tile.position.set(x, y - tile.height);
+        tile.position.set(x, -(y - tile.height));
+        tile.scale.y = -1;
         app.stage.addChild(tile);
     };
-}
+    tilemap.setCollisions = function (x, y, id) {
+        var collisionData = tilemap.collisions[id];
+        if (collisionData) {
+            var collisionX = x + collisionData.x;
+            var collisionY = y - collisionData.image.height + collisionData.y;
+            if (collisionData.polygon != undefined) {
+                console.log('polygon', collisionData);
+                addStaticPolygon(collisionX, -collisionY, collisionData.polygonArr);
+            } else if (collisionData.ellipse != undefined) {
+                // console.log('ellipse', collisionData);
 
-// Keyboard -------------------------------------------------
-
-// Set up key listeners
-var left = 0,
-    right = 0;
-window.addEventListener('keydown', function (evt) {
-    switch (evt.keyCode) {
-        case 38: // up key
-        case 32:
-            player.setJumpKeyState(true);break; // space key
-        case 39:
-            right = 1;break; // right key
-        case 37:
-            left = 1;break; // left key
-    }
-    player.input[0] = right - left;
-    console.log(evt.keyCode);
-});
-window.addEventListener('keyup', function (evt) {
-    switch (evt.keyCode) {
-        case 38: // up
-        case 32:
-            player.setJumpKeyState(false);break;
-        case 39:
-            right = 0;break;
-        case 37:
-            left = 0;break;
-    }
-    player.input[0] = right - left;
-});
-
-// Keyboard END -------------------------------------------------
-
-
-function addStaticCircle(x, y, angle, radius) {
-    var shape = new p2.Circle({
-        collisionGroup: SCENERY_GROUP,
-        radius: radius
-    });
-    var body = new p2.Body({
-        position: [x, y],
-        angle: angle
-    });
-    body.addShape(shape);
-    world.addBody(body);
-}
-
-function addStaticBox(x, y, angle, width, height) {
-    var shape = new p2.Box({
-        collisionGroup: SCENERY_GROUP,
-        width: width,
-        height: height
-    });
-    var body = new p2.Body({
-        position: [x, y],
-        angle: angle
-    });
-    body.addShape(shape);
-    world.addBody(body);
+            } else {
+                // rectangle collision
+                // console.log('rectangle',collisionData);
+                addStaticBox(collisionX, -collisionY, collisionData.width, collisionData.height);
+            }
+        }
+    };
 }
 
 /***/ })

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // import utils from './utils'
 // import { log } from 'util';
 let world,
@@ -57,6 +58,8 @@ p2.vec2.lerp(
 // -----------------------------------------------------------
 // -----------------------------------------------------------
 
+=======
+>>>>>>> 53511934982b364e3e509990d55c1e7233118c18
 //Aliases
 const Application = PIXI.Application,
     loader = PIXI.loader,
