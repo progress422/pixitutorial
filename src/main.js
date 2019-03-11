@@ -59,7 +59,8 @@ function init() {
     setPlayer();
 
     // Add some scenery
-    addStaticBox(0, 0, 1, 5000);
+    // addStaticBox(-39.5, 0, 0, 5000);
+    // addStaticBox(0, -100, 1900, 0);
     // addStaticBox(0, -980, 100, 1);
     // addStaticPolygon(0,-400, [[0,3], [0,1], [2,2]]);
     addWalls();
@@ -73,7 +74,7 @@ function init() {
     });
     characterBody = new p2.Body({
         mass: 0,
-        position: [60, -600],
+        position: [60, -20],
         fixedRotation: true,
         damping: 0,
         type: p2.Body.KINEMATIC
@@ -146,7 +147,6 @@ function setBackground() {
 }
 
 function addStaticPolygon(x, y, vertices) {
-    console.log('vertices',vertices);
     var shape = new p2.Convex({
         collisionGroup: SCENERY_GROUP,
         vertices
@@ -172,24 +172,25 @@ function addStaticBox(x, y, width, height) {
 }
 
 function addWalls(){
-    let horizontalTop = new p2.Body();
-    horizontalTop.addShape(new p2.Plane());
-    world.addBody(horizontalTop);
+    // let horizontalTop = new p2.Body();
+    // horizontalTop.addShape(new p2.Plane());
+    // world.addBody(horizontalTop);
+    addStaticBox(0, playerView.height/2 + 0.5, 5000, 0);
 
     let horizontalBottom = new p2.Body();
     horizontalBottom.addShape(new p2.Plane());
-    horizontalBottom.position = [0,-985];
-    // horizontalBottom.position = [0,-app.renderer.screen.height]
+    horizontalBottom.position = [0, -app.renderer.screen.height + playerView.height/2];
     world.addBody(horizontalBottom);
     
 
-    let verticalLeft = new p2.Body({angle: Math.PI / 2});
-    verticalLeft.addShape(new p2.Plane({collisionGroup: SCENERY_GROUP}));
-    world.addBody(verticalLeft);
+    // let verticalLeft = new p2.Body({angle: Math.PI / 2});
+    // verticalLeft.addShape(new p2.Plane({collisionGroup: SCENERY_GROUP}));
+    // world.addBody(verticalLeft);
+    addStaticBox(-playerView.width/2 - 0.5, 0, 0, 5000);
     
     let verticalRight = new p2.Body({angle: Math.PI / 2});
     verticalRight.addShape(new p2.Plane({collisionGroup: SCENERY_GROUP}));
-    verticalRight.position = [app.renderer.screen.width,0]
+    verticalRight.position = [app.renderer.screen.width - playerView.width/2, 0]
     world.addBody(verticalRight);
 }
 
@@ -197,27 +198,28 @@ function drawBody(body) {
     var x = body.interpolatedPosition[0],
         y = body.interpolatedPosition[1],
         s = body.shapes[0];
-    ctx.save();
-    ctx.translate(x, y);     // Translate to the center of the box
-    ctx.rotate(body.interpolatedAngle);  // Rotate to the box body frame
-
-    if (s instanceof p2.Box) {
-        ctx.fillRect(-s.width / 2, -s.height / 2, s.width, s.height);
-    } else if (s instanceof p2.Circle) {
-        ctx.beginPath();
-        ctx.arc(0, 0, s.radius, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.closePath();
-    } else if (s instanceof p2.Convex) {        
-        ctx.beginPath();
-        ctx.moveTo(s.vertices[0][0],s.vertices[0][1]);
-        for (let i = 1; i < s.vertices.length; i++) {
-            s.vertices[i];
-            ctx.lineTo(s.vertices[i][0],s.vertices[i][1]);
+        
+        ctx.save();
+        ctx.translate(x, y);     // Translate to the center of the box
+        ctx.rotate(body.interpolatedAngle);  // Rotate to the box body frame
+        
+        if (s instanceof p2.Box) {
+            ctx.fillRect(-s.width / 2, -s.height / 2, s.width, s.height);
+        } else if (s instanceof p2.Circle) {
+            ctx.beginPath();
+            ctx.arc(0, 0, s.radius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.closePath();
+        } else if (s instanceof p2.Convex) {        
+            ctx.beginPath();
+            ctx.moveTo(s.vertices[0][0],s.vertices[0][1]);
+            for (let i = 1; i < s.vertices.length; i++) {
+                s.vertices[i];
+                ctx.lineTo(s.vertices[i][0],s.vertices[i][1]);
+            }
+            ctx.fill();
+            ctx.closePath();
         }
-        ctx.fill();
-        ctx.closePath();
-    }
 
     ctx.restore();
 }
@@ -264,7 +266,7 @@ var lastTime;
 function animate(time) {
     playerView.x = characterBody.position[0];
     playerView.y = characterBody.position[1];
-    console.log(characterBody.position[0], characterBody.position[0]);
+    console.log(characterBody.position[0], characterBody.position[1]);
     
     requestAnimationFrame(animate);
 
@@ -308,7 +310,6 @@ function parseTileMap(tilemapSource){
         console.log('Tilemap',tilemap.tilesets);
         console.log('------------------------------------');
         tilemap.loadTiles();
-        console.log(tilemap.collisions);
         
     });
     tilemap.loadTiles = function() {
@@ -345,7 +346,6 @@ function parseTileMap(tilemapSource){
                 }
             })]
         });
-        console.log(tileImagesArr);
         
         // load images to pixi
         tileImagesArr.map((img) => loader.add(img.alias, pathToImages + img.src));
@@ -375,7 +375,6 @@ function parseTileMap(tilemapSource){
             PIXI.loader.resources[alias].texture
         );
         tile.position.set(x,-(y-tile.height));
-        console.log('tile Y',-(y-tile.height));
         
         tile.scale.y = -1;
         app.stage.addChild(tile);
@@ -386,7 +385,6 @@ function parseTileMap(tilemapSource){
             let collisionX = x + collisionData.x;
             let collisionY = y - collisionData.image.height + collisionData.y;
             if (collisionData.polygon != undefined){
-                console.log('polygon',collisionData);
                 addStaticPolygon(collisionX,-collisionY, collisionData.polygonArr);
             } else if (collisionData.ellipse != undefined) {
                 // console.log('ellipse', collisionData);
@@ -405,7 +403,6 @@ function flipArrayY(arr) {
     const maxY = 0;
     const minY = 0;
     arr.map((point) => {
-        console.log(4);
         
     });
 }
